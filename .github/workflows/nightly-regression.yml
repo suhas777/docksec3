@@ -1,0 +1,50 @@
+name: Nightly Regression Tests
+
+on:
+  schedule:
+    - cron: '0 22 * * *'      # runs at 22:00 UTC daily
+  workflow_dispatch:          # allows manual trigger from GitHub UI
+
+jobs:
+  regression:
+    runs-on: ubuntu-latest
+
+        # Inject GitHub Secrets as environment variables
+    env:
+      AZURE_TENANT_ID:            ${{ secrets.AZURE_TENANT_ID }}
+      AZURE_CLIENT_ID:            ${{ secrets.AZURE_CLIENT_ID }}
+      EPAUTOMATION_PRIVATE_KEY:   ${{ secrets.EPAUTOMATION_PRIVATE_KEY }}
+      CERT_THUMBPRINT:            ${{ secrets.CERT_THUMBPRINT }}
+      AUTH_SCOPE:                 "https://your-ecoplant-app/.default"
+
+    steps:
+
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install dependencies
+        run: pip install -r requirements.txt
+
+            # ── CERTIFICATE-BASED AUTHENTICATION ─────────────────────────
+      - name: Authenticate (certificate-based)
+        id: auth
+        run: |
+          TOKEN=$(python get_token.py)
+          echo "ACCESS_TOKEN=$TOKEN" >> $GITHUB_ENV
+          echo "::add-mask::$TOKEN"  # masks token in all log output
+
+            # ── RUN TESTS ────────────────────────────────────────────────
+      - name: Run regression tests
+        run: pytest tests/ --tb=short -v
+        env:
+          ACCESS_TOKEN: ${{ env.ACCESS_TOKEN }}
+
+            # ── CLEANUP (runs even if tests fail) ───────────────────────
+      - name: Clear sensitive env vars
+        if: always()
+        run: echo "ACCESS_TOKEN=" >> $GITHUB_ENV
