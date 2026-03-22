@@ -15,7 +15,7 @@ jobs:
       AZURE_CLIENT_ID:            ${{ secrets.AZURE_CLIENT_ID }}
       EPAUTOMATION_PRIVATE_KEY:   ${{ secrets.EPAUTOMATION_PRIVATE_KEY }}
       CERT_THUMBPRINT:            ${{ secrets.CERT_THUMBPRINT }}
-      AUTH_SCOPE:                 "https://your-ecoplant-app/.default"
+      AUTH_SCOPE:                 "https://graph.microsoft.com/.default"
 
     steps:
 
